@@ -5,7 +5,7 @@
 
 char* read_cmnd();
 char** read_args(char*);
-void exec();
+int execute(char**);
 int launch(char**);
 
 void shell_loop()
@@ -18,9 +18,8 @@ void shell_loop()
   do {
     printf("> ");
     cmnd = read_cmnd(); // wczytujemy komendę
-    // printf("%s\n", read_cmnd()); // debug
     args = read_args(cmnd); // 'wyłuskanie' argumentów z komendy
-    // status = execute(args); // wykonanie odpowiedniej funkcji z argumentami
+    status = execute(args); // wykonanie odpowiedniej funkcji z argumentami
 
     // zwalnianie pamięci
     free(cmnd);
@@ -78,7 +77,7 @@ char** read_args(char* cmnd)
   // printf("%s\n", cmnd); // debug
   int i = 0; // licznik przechodzacy po komendzie
   int cmnd_buffer = 1024; // bufor dla komendy
-  char* delim = ","; // oddzielnik(i) slow w komendzie
+  char* delim = " "; // oddzielnik(i) slow w komendzie
   char** args = malloc(sizeof(char*) * cmnd_buffer); // komenda oraz argumenty, juz rozdzielone
   char* arg; // pojedyncze slowo
 
@@ -123,6 +122,7 @@ int launch(char** args)
 {
   /*
   funkcja uruchamiajaca podana funkcje z podanymi argumentami
+  **args - lista slow wchodzacych w sklad komendy, pierwsze slowo to funkcja, reszta to argumenty
   */
   int status;
   pid_t pid, wpid; // id procesu-dziecka i procesu-rodzica
@@ -148,6 +148,50 @@ int launch(char** args)
       wpid = waitpid(pid, &status, WUNTRACED); // czekamy na ukonczenie procesu-dziecka
     } while (!WIFEXITED(status) && !WIFSIGNALED(status)); // dopoki proces nie wyjdzie lub nie zostanie zabity
   }
+  return 1;
+}
+
+
+//////// sekcja fukncji wbudowanych w shella (built-ins)
+
+// wstepne deklaracje funkcji
+int help(char** args);
+
+// lista built-inów
+char* builtins[] =
+{
+  "help"
+};
+
+int (*builtin_func[]) (char**) =
+{
+  &help
+};
+
+int builtins_num()
+{
+  return sizeof(builtins)/sizeof(builtins[0]);
+}
+
+
+int execute(char** args)
+{
+  int i;
+  printf("Command: %s\n", args[0]);
+  for (i = 0; i < builtins_num(); i++)
+  {
+    if (strcmp(args[0], builtins[i]) == 0)
+    {
+      return (builtin_func[i])(args);
+    }
+  }
+  return launch(args);
+}
+
+
+int help(char** args)
+{
+  printf("Sekcja pomocy dla powloki.\nDostepne polecenia:\n");
   return 1;
 }
 
