@@ -88,14 +88,14 @@ char** read_args(char* cmnd)
     exit(EXIT_FAILURE);
   }
 
-  arg = strtok(cmnd, delim);
+  arg = strtok(cmnd, delim); // korzystajac z strtok() wyluskujemy pierwsze slowo
 
-  while (arg != NULL)
+  while (arg != NULL) // powtarzamy proces dopoki mamy slowa w komendzie
   {
-    args[i] = arg;
+    args[i] = arg; // wszadzamy wyluskane slowo do znacznika w args
     i++;
 
-    if (i >= cmnd_buffer)
+    if (i >= cmnd_buffer) // zwiekszenie bufora na wypadek przekroczenia go
     {
       cmnd_buffer += cmnd_buffer;
       args = realloc(args, cmnd_buffer * sizeof(char*));
@@ -106,9 +106,9 @@ char** read_args(char* cmnd)
         exit(EXIT_FAILURE);
       }
     }
-    arg = strtok(NULL, delim);
+    arg = strtok(NULL, delim); // wyluskujemy kolejne slowa
   }
-  args[i] = NULL;
+  args[i] = NULL; //jak juz nie ma slow, konczymy ilste argumentow nullem
   i = 0;
   while (args[i] != NULL)
   {
@@ -121,24 +121,33 @@ char** read_args(char* cmnd)
 
 int launch(char** args)
 {
+  /*
+  funkcja uruchamiajaca podana funkcje z podanymi argumentami
+  */
   int status;
   pid_t pid, wpid; // id procesu-dziecka i procesu-rodzica
 
-  pid = fork();
+  pid = fork(); // tworzymy forka dla procesu-dziecka (tworzy sie drugi proces)
 
-  if (pid == 0) {
-    if (execvp(args[0], args) == -1) {
+  if (pid == 0) // tu wchodzi proces-dziecko, fork() zwraca 0 dla procesu-dziecka
+  {
+    if (execvp(args[0], args) == -1) // probujemy uruchomic funkcje, jesli cos poszlo nie tak zwracamy blad
+    {
       perror("lsh");
     }
     exit(EXIT_FAILURE);
-  } else if (pid < 0) {
-    perror("lsh");
-  } else {
-    do {
-      wpid = waitpid(pid, &status, WUNTRACED);
-    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
   }
-
+  else if (pid < 0) // jakis blad z pidem
+  {
+    perror("lsh");
+  }
+  else // tu wchodzi proces-rodzic
+  {
+    do
+    {
+      wpid = waitpid(pid, &status, WUNTRACED); // czekamy na ukonczenie procesu-dziecka
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status)); // dopoki proces nie wyjdzie lub nie zostanie zabity
+  }
   return 1;
 }
 
