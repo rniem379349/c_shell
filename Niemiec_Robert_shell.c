@@ -15,6 +15,7 @@ void shell_loop()
   char **args; // lista argumentów
   int status; // stan programu, od jego wartości zależy, czy pętla jest dalej wykonywana
 
+
   do {
     printf("> ");
     cmnd = read_cmnd(); // wczytujemy komendę
@@ -107,7 +108,7 @@ char** read_args(char* cmnd)
     }
     arg = strtok(NULL, delim); // wyluskujemy kolejne slowa
   }
-  args[i] = NULL; //jak juz nie ma slow, konczymy ilste argumentow nullem
+  args[i] = NULL; //jak juz nie ma slow, konczymy (odgradzamy) ilste argumentow nullem
   i = 0;
   while (args[i] != NULL)
   {
@@ -156,16 +157,22 @@ int launch(char** args)
 
 // wstepne deklaracje funkcji
 int help(char** args);
+int exit_shell(char** args);
+int print_history(char** args, char** hist, unsigned HIST_BUFFER);
 
 // lista built-inów
 char* builtins[] =
 {
-  "help"
+  "help",
+  "exit_shell",
+  "print_history"
 };
 
 int (*builtin_func[]) (char**) =
 {
-  &help
+  &help,
+  &exit_shell,
+  &print_history
 };
 
 int builtins_num()
@@ -191,10 +198,25 @@ int execute(char** args)
 
 int help(char** args)
 {
+  int i = 0;
   printf("Sekcja pomocy dla powloki.\nDostepne polecenia:\n");
+  for (i; i < builtins_num(); i++)
+  {
+    printf("%s\n", builtins[i]);
+  }
   return 1;
 }
 
+
+int print_history(char** args, char** hist, unsigned HIST_BUFFER)
+{}
+
+int exit_shell(char** args)
+{
+  // po prostu wyjscie z petli (shella)
+  printf("Do widzenia\n");
+  return 0;
+}
 
 int main(int argc, char const *argv[])
 {
