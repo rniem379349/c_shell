@@ -159,20 +159,26 @@ int launch(char** args)
 int help(char** args);
 int exit_shell(char** args);
 int print_history(char** args, char** hist, unsigned HIST_BUFFER);
+int shell_pipe(char** args);
+int shell_cd(char** args);
 
 // lista built-inów
 char* builtins[] =
 {
   "help",
   "exit_shell",
-  "print_history"
+  "print_history",
+  "shell_pipe",
+  "shell_cd"
 };
 
 int (*builtin_func[]) (char**) =
 {
   &help,
   &exit_shell,
-  &print_history
+  &print_history,
+  &shell_pipe,
+  &shell_cd
 };
 
 int builtins_num()
@@ -210,6 +216,67 @@ int help(char** args)
 
 int print_history(char** args, char** hist, unsigned HIST_BUFFER)
 {}
+
+int shell_pipe(char** args)
+{
+  // Zwykla konkatenacja dwoch lub wiecej stringow
+  int i = 2;
+  int size = 0;
+  unsigned pipe_buffer = 1024;
+  if (args[1] == NULL || args[2] == NULL)
+  {
+    printf("shell_pipe przyjmuje co najmniej dwa argumenty\n");
+    return 0;
+  }
+
+  char* result = malloc(pipe_buffer*sizeof(char*));
+  size++;
+
+  if (size >= pipe_buffer)
+  {
+    pipe_buffer = pipe_buffer * 2;
+    result = realloc(result, pipe_buffer*sizeof(char*));
+    if (!result)
+    {
+      printf("Blad alokacyjny\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  strcpy(result,args[1]);
+  while (args[i] != NULL)
+  {
+    result = strcat(result, args[i]);
+    i++;
+    size++;
+
+    if (size >= pipe_buffer)
+    {
+      pipe_buffer = pipe_buffer * 2;
+      result = realloc(result, pipe_buffer*sizeof(char*));
+      if (!result)
+      {
+        printf("Blad alokacyjny\n");
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+  printf("%s\n", result);
+  return 1;
+}
+
+int shell_cd(char** args)
+{
+  if (args[1] == NULL)
+  {
+    fprintf(stderr, "Blad: wymagany folder docelowy\n");
+  }
+  if (chdir(args[1]) != 0)
+  {
+    fprintf(stderr,"shell_cd: Blad\n");
+  }
+  return 1;
+}
+
 
 int exit_shell(char** args)
 {
