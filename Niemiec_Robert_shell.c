@@ -10,15 +10,55 @@ int launch(char**);
 
 void shell_loop()
 {
-  // pętla pobierająca komendę od użytkownika, przekształcająca ją na funkcję i argumenty, oraz wykonjująca odpowiednie funkcje
+  // pętla pobierająca komendę od użytkownika, przekształcająca ją na funkcję i argumenty, oraz wykonjująca odpowiednie funkcje.
+  // funkcja ta rowniez zapamietuje historie komend wpisywanych przez uzytkownika.
   char *cmnd; // string z całą komendą
   char **args; // lista argumentów
   int status; // stan programu, od jego wartości zależy, czy pętla jest dalej wykonywana
 
+  // inicjowanie historii polecen
+  int i = 0, command;
+  unsigned histbuf = 1024;
+  char** hist = (char*)malloc(histbuf * sizeof(char*));
+  if (!hist)
+  {
+    fprintf(stderr, "Blad alokacyjny\n");
+    exit(0);
+  }
+
+  printf("Powłoka systemu Linux, w.1.0.\nSekcja pomocy - \"help\"\n\n");
 
   do {
     printf("> ");
     cmnd = read_cmnd(); // wczytujemy komendę
+
+    // obsluga historii polecen
+    hist[i] = malloc(histbuf * sizeof(char));
+    strcpy(hist[i],cmnd);
+    i++;
+
+    if (i >= histbuf)
+    {
+      histbuf *= 2;
+      hist = (char*)realloc(hist, histbuf * sizeof(char*));
+      if (!hist)
+      {
+        fprintf(stderr, "Blad alokacyjny\n");
+        exit(0);
+      }
+    }
+
+    if (strcmp(cmnd,"history") == 0) // wyswietlenie historii polecen
+    {
+      command = 0;
+      while (hist[command] != NULL)
+      {
+        printf("%d|\t%s\n", command, hist[command]);
+        command++;
+      }
+      continue;
+    }
+
     args = read_args(cmnd); // 'wyłuskanie' argumentów z komendy
     status = execute(args); // wykonanie odpowiedniej funkcji z argumentami
 
@@ -26,6 +66,7 @@ void shell_loop()
     free(cmnd);
     free(args);
   } while (status);
+  free(hist);
 }
 
 
@@ -44,17 +85,15 @@ char* read_cmnd()
 
   while (1)
   {
-    // Read a character
-    c = getchar();
-    // If we hit EOF, replace it with a null character and return.
-    if (c == EOF || c == '\n')
+    c = getchar(); // czytamy pojedyncze znaki
+    if (c == '\n') // jeśli napotkamy koniec linii ('enter'), to konczymy, zwracamy komendę
     {
       buffer[i] = '\0';
       return buffer;
     }
     else
     {
-      buffer[i] = c;
+      buffer[i] = c; // dodajemy kolejne znaki do bufora
     }
     i++;
 
@@ -110,12 +149,12 @@ char** read_args(char* cmnd)
   }
   args[i] = NULL; //jak juz nie ma slow, konczymy (odgradzamy) ilste argumentow nullem
   i = 0;
-  while (args[i] != NULL)
-  {
-    printf("%s\n", args[i]);
-    i++;
-  }
-  return args;
+  // while (args[i] != NULL) // debug, printowanie argumentow
+  // {
+    // printf("%s\n", args[i]);
+  //   i++;
+  // }
+  return args; // zwracamy liste slow
 }
 
 
@@ -158,7 +197,6 @@ int launch(char** args)
 // wstepne deklaracje funkcji
 int help(char** args);
 int exit_shell(char** args);
-int print_history(char** args, char** hist, unsigned HIST_BUFFER);
 int shell_pipe(char** args);
 int shell_cd(char** args);
 
@@ -167,21 +205,20 @@ char* builtins[] =
 {
   "help",
   "exit_shell",
-  "print_history",
   "shell_pipe",
-  "shell_cd"
+  "shell_cd",
+  "history"
 };
 
-int (*builtin_func[]) (char**) =
+int (*builtin_func[]) (char**) = // odnosniki do funkcji
 {
   &help,
   &exit_shell,
-  &print_history,
   &shell_pipe,
   &shell_cd
 };
 
-int builtins_num()
+int builtins_num() // ilosc funkcji wbudowanych
 {
   return sizeof(builtins)/sizeof(builtins[0]);
 }
@@ -190,7 +227,6 @@ int builtins_num()
 int execute(char** args)
 {
   int i;
-  printf("Command: %s\n", args[0]);
   for (i = 0; i < builtins_num(); i++)
   {
     if (strcmp(args[0], builtins[i]) == 0)
@@ -205,17 +241,15 @@ int execute(char** args)
 int help(char** args)
 {
   int i = 0;
-  printf("Sekcja pomocy dla powloki.\nDostepne polecenia:\n");
+  printf("Sekcja pomocy dla powloki.\nDostepne polecenia:\n\n");
   for (i; i < builtins_num(); i++)
   {
     printf("%s\n", builtins[i]);
   }
+  printf("\n\n");
   return 1;
 }
 
-
-int print_history(char** args, char** hist, unsigned HIST_BUFFER)
-{}
 
 int shell_pipe(char** args)
 {
@@ -263,6 +297,7 @@ int shell_pipe(char** args)
   printf("%s\n", result);
   return 1;
 }
+
 
 int shell_cd(char** args)
 {
