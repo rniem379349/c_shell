@@ -1,3 +1,7 @@
+// Shell w C
+// Autor: Robert Niemiec
+// Data: 21.01.2017
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
